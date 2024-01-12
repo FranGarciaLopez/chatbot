@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+       <meta charset="UTF-8">
+       <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+
+       <title>Chat bot</title>
+
+       <script type="module">
+
+              import { io } from 'https://cdn.socket.io/4.3.2/socket.io.esm.min.js'
+
+              const getUserName = async () => {
+                     const username = localStorage.getItem('username');
+                     if (username) {
+                            return username;
+                     }
+
+                     const res = await fetch('https://random-data-api.com/api/users/random_user');
+                     const { username: randomUsername } = await res.json();
+
+                     localStorage.setItem('username', randomUsername);
+                     return randomUsername;
+              }
+
+              const socket = io({
+                     auth: {
+                            token: '123',
+                            username: await getUserName(),
+                            serverOffset: 0
+                     }
+              });
+
+              const form = document.getElementById('form');
+              const input = document.getElementById('input');
+              const messages = document.getElementById('messages');
+              const username = localStorage.getItem('username'); // Get the username from localStorage
+              const notificationBox = document.getElementById('notification-box');
+
+
+              socket.on('chat message', (msg, serverOffset, senderUsername, senderRole) => {
+                     const item = `<li>
+                            <p>${msg}</p>
+                            <small>${senderUsername}</small>
+                     </li>`;
+                     messages.insertAdjacentHTML('beforeend', item);
+
+                     if (senderUsername !== username) {
+                            showNotificationBox(senderUsername); // Muestra el cuadro de mensaje para el receiver
+                     } else {
+                            messages.scrollTop = messages.scrollHeight;
+                     }                     
+              });
+
+              form.addEventListener('submit', (e) => {
+                     e.preventDefault()
+
+                     if (input.value) {
+                            socket.emit('chat message', input.value);
+                            input.value = '';
+                     }
+              });
+
+              function showNotificationBox(senderUsername) {
+
+
+                     notificationBox.textContent = `Nuevo mensaje de ${senderUsername}`;
+                     notificationBox.style.display = 'block';
+
+                     // Ocultar la notificación después de unos segundos (puedes ajustar el tiempo)
+                     setTimeout(() => {
+                            notificationBox.style.display = 'none';
+                     }, 3000); 
+              }
+
+       </script>
+
+
+       <style>
+              * {
+                     margin: 0;
+                     padding: 0;
+                     box-sizing: border-box;
+              }
+
+              *::before,
+              *::after {
+                     box-sizing: border-box;
+              }
+
+              /* Styling the chat interface with a modern touch */
+              body {
+                     margin: 0;
+                     font-family: 'Helvetica Neue', Arial, sans-serif;
+                     display: flex;
+                     justify-content: center;
+                     align-items: center;
+                     height: 100vh;
+                     background-color: #f0f0f0;
+              }
+
+              #chat {
+                     border: 1px solid #ccc;
+                     border-radius: 8px;
+                     width: 350px;
+                     height: 100%;
+                     position: relative;
+                     background-color: #fff;
+                     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+              }
+
+
+              #form {
+                     display: flex;
+                     align-items: center;
+                     padding: 12px;
+                     background: #f8f8f8;
+                     position: absolute;
+                     bottom: 0;
+                     border-top: 1px solid #ddd;
+              }
+
+              #form>input {
+                     background: #eee;
+                     border: 0;
+                     border-radius: 9999px;
+                     color: #666;
+                     font-size: 16px;
+                     font-weight: 600;
+                     padding: 8px 16px;
+                     width: 100%;
+              }
+
+              input:focus {
+                     outline: 0;
+              }
+
+              #form>button {
+                     background: #eee;
+                     border: 0;
+                     border-radius: 9999px;
+                     color: #666;
+                     font-size: 16px;
+                     font-weight: 600;
+                     padding: 8px 28px;
+                     margin-left: 8px;
+                     cursor: pointer;
+                     transition: all .5s ease;
+                     outline: none;
+              }
+
+              #form>button:hover {
+                     color: #fff;
+                     background-color: #001F3F;
+              }
+
+              #messages {
+                     list-style-type: none;
+                     padding: 12px;
+                     margin: 0;
+                     height: calc(100% - 46px);
+                     overflow-y: scroll;
+              }
+
+              #messages::-webkit-scrollbar {
+                     width: 8px;
+              }
+
+              #messages::-webkit-scrollbar-thumb {
+                     background: transparent;
+              }
+
+              #messages::-webkit-scrollbar-track {
+                     background: transparent;
+              }
+
+              #messages>li {
+                     display: flex;
+                     flex-direction: column;
+                     margin-bottom: 12px;
+              }
+
+              #messages>li>p {
+                     background: #f0f0f0;
+                     border-radius: 20px 20px;
+                     display: inline-block;
+                     padding: 12px ;
+                     margin-bottom: 4px;
+                     position: relative;
+                     word-break: break-word;
+              }
+
+              #messages>li>p:hover {
+                     background: #f0f0f0;
+                     box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+              }
+
+              #messages>li>small {
+                     display: inline;
+                     font-size: 14px;
+                     color: #888;
+                     margin-top: 4px;
+                     padding-right: 12px;
+                     align-self: flex-end;
+              }
+
+              #messages>li>small>span {
+                     font-weight: 600;
+                     color: #333;
+              }
+
+              .hidden {
+                     display: none;
+              }
+
+              /* center the box in the screen
+              animate the box when appearing with @keyframes */
+
+              @keyframes appear {
+                     0% {
+                            transform: translate(-50%, -50%) scale(0.5);
+                            opacity: 0;
+                     }
+
+                     100% {
+                            transform: translate(-50%, -50%) scale(1);
+                            opacity: 1;
+                     }
+              }
+
+              /* Styles for the notification */
+              #notification-box {
+                     position: absolute;
+                     bottom: calc(100% + 10px);
+                     left: 50%;
+                     transform: translateX(-50%);
+                     background-color: #007BFF;
+                     color: #fff;
+                     border-radius: 4px;
+                     padding: 8px 12px;
+                     font-size: 14px;
+                     font-weight: 600;
+                     display: none;
+                     animation: appear .5s ease forwards;
+                     z-index: 2;
+              }
+
+              #notification-box.show {
+                     display: block;
+              }
+
+       </style>
+</head>
+
+<body>
+       <section id="chat">
+              <ul id="messages"></ul>
+              <form id="form">
+                     <div id="notification-box" class="hidden">Notificación</div>
+                     <input type="text" name="message" id="input" placeholder="Escribe un mensaje" autocomplete="off" />
+                     <button id="send-button"><i class="fas fa-paper-plane"></i></button>
+              </form>
+       </section>
+</body>
+
+</html>
